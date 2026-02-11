@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel | Crypto Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Space+Mono&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sci: { base: '#050508', panel: '#0f111a', cyan: '#00f3ff', purple: '#bd00ff', dim: '#8892b0', red: '#ff003c' }
+                    },
+                    fontFamily: { header: ['Orbitron', 'sans-serif'], mono: ['Space Mono', 'monospace'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050508;
+            color: #e2e8f0;
+        }
+
+        .glass-panel {
+            background: rgba(15, 17, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 243, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-glow:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            border-color: #00f3ff;
+        }
+    </style>
+</head>
+
+<body class="p-6 md:p-12 min-h-screen flex flex-col items-center">
+
+    <!-- Header -->
+    <header class="w-full max-w-4xl flex justify-between items-center mb-12">
+        <a href="index.html" class="text-sci-dim hover:text-white font-mono text-sm">
+            <i class="fa-solid fa-arrow-left"></i> Return to Mainframe
+        </a>
+        <h1 class="text-3xl font-header font-bold text-white tracking-widest">
+            SENTINEL<span class="text-sci-cyan">.TOOL</span>
+        </h1>
+    </header>
+
+    <!-- Main Input -->
+    <main class="w-full max-w-4xl space-y-8">
+
+        <section class="glass-panel p-8 rounded-lg">
+            <label class="block text-sci-cyan font-mono text-sm mb-2">ENTER DATA STRING FOR ANALYSIS:</label>
+            <input type="text" id="inputData" placeholder="Type password or text here..." autocomplete="off"
+                class="w-full bg-sci-base border border-gray-700 rounded p-4 text-xl font-mono text-white input-glow transition-all">
+        </section>
+
+        <!-- Grid for Analysis -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Analysis 1: Entropy (Math/Data Science) -->
+            <div class="glass-panel p-6 rounded-lg relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-1 h-full bg-sci-purple"></div>
+                <h3 class="font-header text-xl text-white mb-4"><i
+                        class="fa-solid fa-chart-bar text-sci-purple mr-2"></i> Entropy Score</h3>
+
+                <div class="flex items-end gap-2 mb-2">
+                    <span id="entropyValue" class="text-5xl font-bold text-white font-mono">0</span>
+                    <span class="text-sci-dim font-mono mb-2">bits</span>
+                </div>
+
+                <div class="w-full bg-gray-800 h-2 rounded-full mt-4 overflow-hidden">
+                    <div id="entropyBar" class="h-full bg-sci-purple transition-all duration-500 w-0"></div>
+                </div>
+                <p id="crackTime" class="mt-4 text-sm font-mono text-gray-400">Est. Brute Force Time: <span
+                        class="text-white">Instant</span></p>
+            </div>
+
+            <!-- Analysis 2: Cryptography (CS/Security) -->
+            <div class="glass-panel p-6 rounded-lg relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-sci-cyan"></div>
+                <h3 class="font-header text-xl text-white mb-4"><i
+                        class="fa-solid fa-fingerprint text-sci-cyan mr-2"></i> SHA-256 Hash</h3>
+
+                <div class="bg-sci-base p-4 rounded border border-gray-700 break-all font-mono text-xs text-sci-dim hover:text-sci-cyan transition-colors"
+                    id="hashOutput">
+                    Waiting for input...
+                </div>
+                <div class="mt-4 flex justify-between items-center">
+                    <span class="text-xs text-gray-500 font-mono">Web Crypto API</span>
+                    <button onclick="copyHash()"
+                        class="text-xs border border-sci-cyan text-sci-cyan px-3 py-1 rounded hover:bg-sci-cyan/10">Copy</button>
+                </div>
+            </div>
+
+            <!-- Analysis 3: Binary/Base64 (Low Level) -->
+            <div class="glass-panel p-6 rounded-lg md:col-span-2 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-sci-dim"></div>
+                <h3 class="font-header text-xl text-white mb-4"><i
+                        class="fa-solid fa-network-wired text-sci-dim mr-2"></i> Data Encoding</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-500 font-mono block mb-1">BASE64</label>
+                        <div id="b64Output"
+                            class="bg-sci-base p-3 rounded font-mono text-sm text-sci-cyan overflow-x-auto">--</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 font-mono block mb-1">BINARY (First 8 Bytes)</label>
+                        <div id="binOutput"
+                            class="bg-sci-base p-3 rounded font-mono text-sm text-sci-cyan overflow-x-auto">--</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="mt-12 text-gray-600 font-mono text-xs">
+        System Status: Online // Sentinel V1.0
+    </footer>
+
+    <script>
+        const input = document.getElementById('inputData');
+        const entropyVal = document.getElementById('entropyValue');
+        const entropyBar = document.getElementById('entropyBar');
+        const crackTime = document.getElementById('crackTime');
+        const hashOut = document.getElementById('hashOutput');
+        const b64Out = document.getElementById('b64Output');
+        const binOut = document.getElementById('binOutput');
+
+        input.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (!val) {
+                resetUI();
+                return;
+            }
+            calculateEntropy(val);
+            generateHash(val);
+            generateEncodings(val);
+        });
+
+        function resetUI() {
+            entropyVal.innerText = '0';
+            entropyBar.style.width = '0%';
+            crackTime.innerHTML = 'Est. Brute Force Time: <span class="text-white">Instant</span>';
+            hashOut.innerText = 'Waiting for input...';
+            b64Out.innerText = '--';
+            binOut.innerText = '--';
+        }
+
+        // 1. Math: Shannon Entropy Calculation
+        function calculateEntropy(str) {
+            const len = str.length;
+            let poolSize = 0;
+
+            if (/[a-z]/.test(str)) poolSize += 26;
+            if (/[A-Z]/.test(str)) poolSize += 26;
+            if (/[0-9]/.test(str)) poolSize += 10;
+            if (/[^a-zA-Z0-9]/.test(str)) poolSize += 32;
+
+            if (poolSize === 0) return;
+
+            // Entropy = length * log2(poolSize)
+            const entropy = Math.round(len * Math.log2(poolSize));
+            entropyVal.innerText = entropy;
+
+            // Visual Bar
+            let percentage = Math.min((entropy / 128) * 100, 100);
+            entropyBar.style.width = `${percentage}%`;
+
+            // Color Logic
+            if (entropy < 40) entropyBar.style.backgroundColor = '#ff003c'; // Weak
+            else if (entropy < 80) entropyBar.style.backgroundColor = '#bd00ff'; // Moderate
+            else entropyBar.style.backgroundColor = '#00f3ff'; // Strong
+
+            // Crack Time Estimation (Assume 1 trillion guesses/sec for a supercomputer)
+            const combinations = BigInt(poolSize) ** BigInt(len);
+            const guessesPerSec = 1000000000000n; // 1 Trillion
+            const seconds = combinations / guessesPerSec;
+
+            let timeString = "Instant";
+            if (seconds > 60n) timeString = `${seconds / 60n} Minutes`;
+            if (seconds > 3600n) timeString = `${seconds / 3600n} Hours`;
+            if (seconds > 86400n) timeString = `${seconds / 86400n} Days`;
+            if (seconds > 31536000n) timeString = `${seconds / 31536000n} Years`;
+            if (seconds > 3153600000n) timeString = "Centuries";
+
+            crackTime.innerHTML = `Est. Supercomputer Crack Time: <span class="text-white">${timeString}</span>`;
+        }
+
+        // 2. Security: Web Crypto API Hashing
+        async function generateHash(str) {
+            const msgBuffer = new TextEncoder().encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            hashOut.innerText = hashHex;
+        }
+
+        // 3. CS: Encodings
+        function generateEncodings(str) {
+            // Base64
+            try {
+                b64Out.innerText = btoa(str);
+            } catch (e) { b64Out.innerText = "Invalid input for Base64"; }
+
+            // Binary
+            let binary = "";
+            for (let i = 0; i < Math.min(str.length, 8); i++) {
+                binary += str[i].charCodeAt(0).toString(2).padStart(8, '0') + " ";
+            }
+            if (str.length > 8) binary += "...";
+            binOut.innerText = binary;
+        }
+
+        function copyHash() {
+            const text = hashOut.innerText;
+            navigator.clipboard.writeText(text);
+            alert("Hash copied to clipboard!");
+        }
+    </script>
+</body>
+
+</html>

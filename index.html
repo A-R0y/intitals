@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aditya Roy | CS & Data Science</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Orbitron:wght@400;500;700&family=Space+Mono&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sci: {
+                            base: '#050508',
+                            panel: '#0f111a',
+                            cyan: '#00f3ff',
+                            purple: '#bd00ff',
+                            dim: '#8892b0',
+                            green: '#0aff0a'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        header: ['Orbitron', 'sans-serif'],
+                        mono: ['Space Mono', 'monospace'],
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050508;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #050508;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f3ff;
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: rgba(15, 17, 26, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-nav {
+            background: rgba(5, 5, 8, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.1);
+        }
+
+        /* Typography & Glows */
+        .text-glow {
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .hover-card {
+            transition: all 0.3s ease;
+        }
+
+        .hover-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+        }
+
+        /* Typing Cursor */
+        .typing-cursor::after {
+            content: '|';
+            animation: blink 1s infinite;
+            color: #00f3ff;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* Canvas Positioning */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        /* Scanline effect overlay */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom,
+                    rgba(255, 255, 255, 0),
+                    rgba(255, 255, 255, 0) 50%,
+                    rgba(0, 0, 0, 0.1) 50%,
+                    rgba(0, 0, 0, 0.1));
+            background-size: 100% 4px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* Linked List Nav Specifics */
+        .ll-node {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .ll-box {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ll-box:hover {
+            background: rgba(0, 243, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        /* The Arrow between nodes */
+        .ll-arrow {
+            display: flex;
+            align-items: center;
+            color: #8892b0;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            padding: 0 8px;
+            opacity: 0.7;
+        }
+
+        .ll-data {
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Address pointer section of the node */
+        .ll-next {
+            background: rgba(0, 243, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body class="antialiased selection:bg-sci-cyan selection:text-sci-base">
+
+    <!-- 3D Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- CRT Scanline Overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-40 glass-nav transition-all duration-300 border-b border-gray-800" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-24">
+                <!-- Logo / Head Node -->
+                <div class="flex-shrink-0 cursor-pointer group" onclick="window.scrollTo(0,0)">
+                    <div class="font-header text-xl font-bold tracking-wider text-white flex flex-col">
+                        <span>ADITYA<span class="text-sci-cyan">.ROY</span></span>
+                        <span
+                            class="text-[10px] text-sci-dim font-mono group-hover:text-sci-cyan transition-colors">struct
+                            Node* head;</span>
+                    </div>
+                </div>
+
+                <!-- Desktop Linked List Menu -->
+                <div class="hidden lg:flex items-center justify-center">
+                    <div class="flex items-center">
+
+                        <!-- Node 1: About -->
+                        <div class="ll-node group">
+                            <a href="#about"
+                                class="ll-box flex border border-sci-dim/30 rounded bg-sci-panel/50 backdrop-blur-md overflow-hidden h-10">
+                                <div
+                                    class="ll-data px-4 flex items-center justify-center font-mono text-xs text-sci-cyan font-bold hover:text-white transition-colors">
+                                    01.ABOUT
+                                </div>
+                                <div
+                                    class="ll-next px-2 w-8 border-l border-sci-dim/30 group-hover:bg-sci-cyan/20 transition-colors flex items-center justify-center">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-sci-cyan"></div>
+                                </div>
+                            </a>
+                            <div class="ll-arrow">
+                                <i class="fa-solid fa-arrow-right-long"></i>
+                            </div>
+                        </div>
+
+                        <!-- Node 2: Experience -->
+                        <div class="ll-node group">
+                            <a href="#experience"
+                                class="ll-box flex border border-sci-dim/30 rounded bg-sci-panel/50 backdrop-blur-md overflow-hidden h-10">
+                                <div
+                                    class="ll-data px-4 flex items-center justify-center font-mono text-xs text-sci-cyan font-bold hover:text-white transition-colors">
+                                    02.EXP
+                                </div>
+                                <div
+                                    class="ll-next px-2 w-8 border-l border-sci-dim/30 group-hover:bg-sci-cyan/20 transition-colors flex items-center justify-center">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-sci-cyan"></div>
+                                </div>
+                            </a>
+                            <div class="ll-arrow">
+                                <i class="fa-solid fa-arrow-right-long"></i>
+                            </div>
+                        </div>
+
+                        <!-- Node 3: Projects -->
+                        <div class="ll-node group">
+                            <a href="#projects"
+                                class="ll-box flex border border-sci-dim/30 rounded bg-sci-panel/50 backdrop-blur-md overflow-hidden h-10">
+                                <div
+                                    class="ll-data px-4 flex items-center justify-center font-mono text-xs text-sci-cyan font-bold hover:text-white transition-colors">
+                                    03.WORK
+                                </div>
+                                <div
+                                    class="ll-next px-2 w-8 border-l border-sci-dim/30 group-hover:bg-sci-cyan/20 transition-colors flex items-center justify-center">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-sci-cyan"></div>
+                                </div>
+                            </a>
+                            <div class="ll-arrow">
+                                <i class="fa-solid fa-arrow-right-long"></i>
+                            </div>
+                        </div>
+
+                        <!-- Node 4: Contact -->
+                        <div class="ll-node group">
+                            <a href="#contact"
+                                class="ll-box flex border border-sci-dim/30 rounded bg-sci-panel/50 backdrop-blur-md overflow-hidden h-10">
+                                <div
+                                    class="ll-data px-4 flex items-center justify-center font-mono text-xs text-sci-cyan font-bold hover:text-white transition-colors">
+                                    04.CONTACT
+                                </div>
+                                <div
+                                    class="ll-next px-2 w-8 border-l border-sci-dim/30 group-hover:bg-sci-cyan/20 transition-colors flex items-center justify-center">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-sci-cyan"></div>
+                                </div>
+                            </a>
+                            <div class="ll-arrow">
+                                <i class="fa-solid fa-arrow-right-long"></i>
+                            </div>
+                        </div>
+
+                        <!-- Null Terminator -->
+                        <div class="ll-node">
+                            <div class="font-mono text-xs text-sci-dim opacity-50">NULL</div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="-mr-2 flex lg:hidden">
+                    <button type="button" class="text-gray-400 hover:text-white p-2"
+                        onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div class="hidden lg:hidden glass-panel border-t border-gray-800" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#about"
+                    class="text-gray-300 hover:text-sci-cyan block px-3 py-2 rounded-md text-base font-medium font-mono">01.
+                    // ABOUT</a>
+                <a href="#experience"
+                    class="text-gray-300 hover:text-sci-cyan block px-3 py-2 rounded-md text-base font-medium font-mono">02.
+                    // EXP</a>
+                <a href="#projects"
+                    class="text-gray-300 hover:text-sci-cyan block px-3 py-2 rounded-md text-base font-medium font-mono">03.
+                    // WORK</a>
+                <a href="#contact"
+                    class="text-sci-cyan block px-3 py-2 rounded-md text-base font-medium font-mono">RESUME</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- Hero Section -->
+        <section class="min-h-screen flex items-center justify-start pt-20" id="hero">
+            <div class="max-w-4xl animate-on-load opacity-0 translate-y-4 transition-all duration-1000 ease-out">
+                <p class="font-mono text-sci-cyan mb-4 tracking-widest">Hello, I am</p>
+                <h1 class="font-header text-5xl md:text-7xl font-bold text-white mb-4 tracking-tight">
+                    Aditya Roy.
+                </h1>
+                <h2 class="font-header text-3xl md:text-5xl font-bold text-sci-dim mb-8 leading-tight">
+                    Building Robust Systems & <br>
+                    <span class="text-sci-cyan typing-cursor" id="typing-text"></span>
+                </h2>
+                <p class="font-sans text-gray-400 text-lg max-w-xl mb-10 leading-relaxed">
+                    A multi-disciplinary <strong>Computer Science</strong> undergraduate (KIIT) and <strong>Data
+                        Science</strong> student (IIT Madras). I bridge the gap between software engineering, data
+                    analytics, and cybersecurity to build secure, scalable, and intelligent solutions.
+                </p>
+                <div class="flex gap-4">
+                    <a href="#projects"
+                        class="font-mono text-sci-base bg-sci-cyan hover:bg-white transition-colors px-8 py-4 rounded font-bold">
+                        View Projects
+                    </a>
+                    <a href="#contact"
+                        class="font-mono text-sci-cyan border border-sci-cyan hover:bg-sci-cyan/10 transition-colors px-8 py-4 rounded">
+                        Contact Me
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- About & Skills Section -->
+        <section id="about" class="py-24">
+            <div class="flex flex-col md:flex-row gap-16 items-start">
+                <!-- About Text -->
+                <div class="w-full md:w-1/2">
+                    <div class="flex items-center gap-4 mb-8">
+                        <span class="font-mono text-sci-cyan text-xl">01.</span>
+                        <h2 class="font-header text-3xl text-white font-bold">About Me</h2>
+                        <div class="h-px bg-gray-700 flex-grow max-w-xs"></div>
+                    </div>
+                    <div class="space-y-4 text-gray-400 font-sans text-lg leading-relaxed">
+                        <p>
+                            I am a software engineering enthusiast with a deep interest in the entire data lifecycle.
+                            Currently, I am pursuing a **B.Tech in Computer Science** at <span
+                                class="text-sci-cyan">KIIT, Bhubaneswar</span> (CGPA 9.44), while concurrently enrolled
+                            in the **B.Sc. in Data Science & Statistics** at <span class="text-sci-cyan">IIT
+                                Madras</span>.
+                        </p>
+                        <p>
+                            My background combines rigorous academic training in algorithms and statistics with
+                            practical experience in **Network Security** and **System Analysis**. I am passionate about
+                            creating software that is not only functional but also secure and ethically grounded.
+                        </p>
+                        <p>
+                            Whether it's analyzing threat patterns or optimizing data pipelines, I enjoy solving complex
+                            problems with code.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Skills Grid -->
+                <div class="w-full md:w-1/2">
+                    <h3 class="font-mono text-white mb-6">Technical Arsenal</h3>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Skill Item -->
+                        <div class="glass-panel p-4 rounded hover:border-sci-cyan/50 transition-colors group">
+                            <i
+                                class="fa-brands fa-python text-sci-cyan text-2xl mb-2 group-hover:scale-110 transition-transform block"></i>
+                            <h4 class="text-white font-bold mb-1">Languages & Core</h4>
+                            <p class="text-sm text-gray-400 font-mono">Python, C, SQL, Linux, Windows</p>
+                        </div>
+
+                        <div class="glass-panel p-4 rounded hover:border-sci-cyan/50 transition-colors group">
+                            <i
+                                class="fa-solid fa-database text-sci-cyan text-2xl mb-2 group-hover:scale-110 transition-transform block"></i>
+                            <h4 class="text-white font-bold mb-1">Data Science</h4>
+                            <p class="text-sm text-gray-400 font-mono">Pandas, NumPy, Statistical Evaluation, Data Viz
+                            </p>
+                        </div>
+
+                        <div class="glass-panel p-4 rounded hover:border-sci-cyan/50 transition-colors group">
+                            <i
+                                class="fa-solid fa-shield-halved text-sci-cyan text-2xl mb-2 group-hover:scale-110 transition-transform block"></i>
+                            <h4 class="text-white font-bold mb-1">Cybersecurity</h4>
+                            <p class="text-sm text-gray-400 font-mono">Threat Analysis, Vuln Assessment, SIEM, Network
+                                Security</p>
+                        </div>
+
+                        <div class="glass-panel p-4 rounded hover:border-sci-cyan/50 transition-colors group">
+                            <i
+                                class="fa-solid fa-laptop-code text-sci-cyan text-2xl mb-2 group-hover:scale-110 transition-transform block"></i>
+                            <h4 class="text-white font-bold mb-1">Engineering</h4>
+                            <p class="text-sm text-gray-400 font-mono">System Design, Tech Documentation, Analytical
+                                Thinking</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Experience Section -->
+        <section id="experience" class="py-24">
+            <div class="flex items-center gap-4 mb-12">
+                <span class="font-mono text-sci-cyan text-xl">02.</span>
+                <h2 class="font-header text-3xl text-white font-bold">Experience Log</h2>
+                <div class="h-px bg-gray-700 flex-grow max-w-xs"></div>
+            </div>
+
+            <div class="relative border-l border-gray-800 ml-4 md:ml-6 space-y-12">
+
+                <!-- Job 1 -->
+                <div class="relative pl-8 md:pl-12 group">
+                    <div
+                        class="absolute -left-[5px] top-2 w-2.5 h-2.5 rounded-full bg-sci-cyan shadow-[0_0_10px_#00f3ff]">
+                    </div>
+
+                    <h3 class="text-xl font-bold text-white">Network Security Associate</h3>
+                    <p class="font-mono text-sci-cyan text-sm mb-2">Fortinet (Virtual) <span
+                            class="text-gray-500">|</span> Jan 2025 - Mar 2025</p>
+
+                    <ul class="list-none space-y-2 text-gray-400">
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-caret-right text-sci-cyan mt-1.5 text-xs"></i>
+                            <span>Gained hands-on experience with firewall configuration, traffic monitoring, intrusion
+                                detection, and vulnerability assessment.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-caret-right text-sci-cyan mt-1.5 text-xs"></i>
+                            <span>Developed skills in system evaluation, risk identification, and structured technical
+                                reporting.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-caret-right text-sci-cyan mt-1.5 text-xs"></i>
+                            <span>Strengthened understanding of reliability, safety, and robustness in enterprise
+                                systems.</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="py-24">
+            <div class="flex items-center gap-4 mb-12">
+                <span class="font-mono text-sci-cyan text-xl">03.</span>
+                <h2 class="font-header text-3xl text-white font-bold">Featured Projects</h2>
+                <div class="h-px bg-gray-700 flex-grow max-w-xs"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <!-- New Sentinel Project Card -->
+                <div class="glass-panel p-6 rounded-lg hover-card flex flex-col h-full border border-sci-cyan/30">
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="fa-solid fa-fingerprint text-4xl text-sci-cyan"></i>
+                        <div class="flex gap-4">
+                            <!-- Link directly to the tool file -->
+                            <a href="tool.html" class="text-white hover:text-sci-cyan"><i
+                                    class="fa-solid fa-play text-xl"></i> Launch</a>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2 font-header">Sentinel Crypto Analyzer</h3>
+                    <p class="text-gray-400 text-sm mb-4 flex-grow">
+                        A real-time cybersecurity dashboard built with Vanilla JS and the Web Crypto API. Calculates
+                        password entropy (Shannon info theory) and generates SHA-256 hashes instantly in the browser.
+                    </p>
+                    <div class="flex flex-wrap gap-3 font-mono text-xs text-sci-dim mt-auto">
+                        <span class="text-sci-cyan">Interactive</span>
+                        <span>JavaScript</span>
+                        <span>Cryptography</span>
+                    </div>
+                </div>
+
+                <!-- Project Card 2 -->
+                <div class="glass-panel p-6 rounded-lg hover-card flex flex-col h-full">
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="fa-solid fa-chart-network text-4xl text-sci-cyan"></i>
+                        <div class="flex gap-4">
+                            <a href="#" class="text-gray-400 hover:text-white"><i
+                                    class="fa-brands fa-github text-xl"></i></a>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2 font-header">Data-Driven Decision Pipelines</h3>
+                    <p class="text-gray-400 text-sm mb-4 flex-grow">
+                        Developed evaluation workflows using Python and Pandas to analyze outputs from automated
+                        systems. Focused on data reliability and usefulness in supporting high-stakes human
+                        decision-making.
+                    </p>
+                    <div class="flex flex-wrap gap-3 font-mono text-xs text-sci-dim mt-auto">
+                        <span>Python</span>
+                        <span>Pandas</span>
+                        <span>Analytics</span>
+                    </div>
+                </div>
+
+                <!-- Project Card 3 -->
+                <div class="glass-panel p-6 rounded-lg hover-card flex flex-col h-full">
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="fa-solid fa-magnifying-glass-chart text-4xl text-sci-cyan"></i>
+                        <div class="flex gap-4">
+                            <a href="#" class="text-gray-400 hover:text-white"><i
+                                    class="fa-brands fa-github text-xl"></i></a>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2 font-header">System & AI Evaluation</h3>
+                    <p class="text-gray-400 text-sm mb-4 flex-grow">
+                        Conducted structured performance testing of complex software tools. Measured accuracy,
+                        consistency, and failure rates across varied datasets to ensure robust system behavior.
+                    </p>
+                    <div class="flex flex-wrap gap-3 font-mono text-xs text-sci-dim mt-auto">
+                        <span>QA/Testing</span>
+                        <span>System Design</span>
+                        <span>Documentation</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Certifications Section -->
+        <section id="certs" class="py-12">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="font-mono text-sci-cyan text-xl">04.</span>
+                <h2 class="font-header text-2xl text-white font-bold">Certifications</h2>
+                <div class="h-px bg-gray-700 flex-grow max-w-xs"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-panel p-4 rounded flex items-center gap-4">
+                    <i class="fa-brands fa-google text-sci-cyan text-2xl"></i>
+                    <div>
+                        <h4 class="text-white font-bold">Google Cybersecurity</h4>
+                        <p class="text-xs text-gray-400 font-mono">Professional Certificate (Coursera)</p>
+                    </div>
+                </div>
+                <div class="glass-panel p-4 rounded flex items-center gap-4">
+                    <i class="fa-solid fa-network-wired text-sci-cyan text-2xl"></i>
+                    <div>
+                        <h4 class="text-white font-bold">Cisco Cybersecurity Analyst</h4>
+                        <p class="text-xs text-gray-400 font-mono">Junior Path (Networking Academy)</p>
+                    </div>
+                </div>
+                <div class="glass-panel p-4 rounded flex items-center gap-4">
+                    <i class="fa-solid fa-shield-virus text-sci-cyan text-2xl"></i>
+                    <div>
+                        <h4 class="text-white font-bold">Fortinet Certified Associate</h4>
+                        <p class="text-xs text-gray-400 font-mono">Fundamentals in Cybersecurity</p>
+                    </div>
+                </div>
+                <div class="glass-panel p-4 rounded flex items-center gap-4">
+                    <i class="fa-solid fa-chart-pie text-sci-cyan text-2xl"></i>
+                    <div>
+                        <h4 class="text-white font-bold">Data Visualization w/ Python</h4>
+                        <p class="text-xs text-gray-400 font-mono">Coursera</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="py-24 mb-20">
+            <div class="glass-panel max-w-2xl mx-auto text-center p-12 rounded-xl">
+                <span class="font-mono text-sci-cyan block mb-4">05. // INITIALIZE HANDSHAKE</span>
+                <h2 class="font-header text-4xl md:text-5xl font-bold text-white mb-6">Get In Touch</h2>
+                <p class="text-gray-400 text-lg mb-8 max-w-lg mx-auto">
+                    I am open to opportunities in Software Engineering, Data Science, and Cybersecurity.
+                </p>
+                <div class="flex flex-col gap-4 items-center">
+                    <a href="mailto:aroy292005@gmail.com"
+                        class="inline-block border-2 border-sci-cyan text-sci-cyan font-mono font-bold py-4 px-10 rounded hover:bg-sci-cyan/10 transition-colors duration-300">
+                        aroy292005@gmail.com
+                    </a>
+                    <div class="flex gap-4 mt-4">
+                        <a href="https://www.linkedin.com/in/aditya-roy-80078527a" target="_blank"
+                            class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa-brands fa-linkedin text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa-solid fa-graduation-cap text-2xl"></i> <!-- Coursera/Credly generic icon -->
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center pb-8 font-mono text-xs text-gray-500">
+            <p>Designed & Built by Aditya Roy</p>
+        </footer>
+
+    </main>
+
+    <!-- Scripts -->
+    <script>
+        /**
+         * 1. THREE.JS BACKGROUND ANIMATION
+         * Slightly denser particle system for Data Science vibe
+         */
+        const canvas = document.querySelector('#bg-canvas');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050508, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        // Geometries
+        const geometry = new THREE.IcosahedronGeometry(10, 2);
+        const wireframe = new THREE.WireframeGeometry(geometry);
+
+        // Material - Cyan Glow
+        const material = new THREE.LineBasicMaterial({
+            color: 0x00f3ff,
+            transparent: true,
+            opacity: 0.12
+        });
+
+        // Create Mesh
+        const sphere = new THREE.LineSegments(wireframe, material);
+        scene.add(sphere);
+
+        // Particle System (Data Points)
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 1000; // Increased for "Data" feel
+        const posArray = new Float32Array(particlesCount * 3);
+
+        for (let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 60;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.04,
+            color: 0xbd00ff,
+            transparent: true,
+            opacity: 0.7
+        });
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        camera.position.z = 20;
+
+        // Mouse Interaction
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - windowHalfX);
+            mouseY = (event.clientY - windowHalfY);
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            targetX = mouseX * 0.001;
+            targetY = mouseY * 0.001;
+
+            const elapsedTime = clock.getElapsedTime();
+
+            // Rotate main sphere
+            sphere.rotation.y += 0.002;
+            sphere.rotation.x += 0.001;
+            sphere.rotation.y += 0.05 * (targetX - sphere.rotation.y);
+            sphere.rotation.x += 0.05 * (targetY - sphere.rotation.x);
+
+            // Particles flow like data streams
+            particlesMesh.rotation.y = -elapsedTime * 0.05;
+            particlesMesh.position.y = Math.sin(elapsedTime * 0.2) * 0.5;
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+
+        /**
+         * 2. TYPING EFFECT
+         */
+        const textToType = ["Data Science.", "Cybersecurity.", "Scalable Software.", "Robust Solutions."];
+        const typingElement = document.getElementById("typing-text");
+        let textIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        let typeSpeed = 100;
+
+        function typeEffect() {
+            const currentText = textToType[textIndex];
+
+            if (isDeleting) {
+                typingElement.textContent = currentText.substring(0, charIndex - 1);
+                charIndex--;
+                typeSpeed = 50;
+            } else {
+                typingElement.textContent = currentText.substring(0, charIndex + 1);
+                charIndex++;
+                typeSpeed = 100;
+            }
+
+            if (!isDeleting && charIndex === currentText.length) {
+                isDeleting = true;
+                typeSpeed = 2000;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                textIndex = (textIndex + 1) % textToType.length;
+                typeSpeed = 500;
+            }
+
+            setTimeout(typeEffect, typeSpeed);
+        }
+        document.addEventListener('DOMContentLoaded', typeEffect);
+
+
+        /**
+         * 3. SCROLL REVEAL
+         */
+        const observerOptions = { threshold: 0.1 };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.remove('opacity-0', 'translate-y-4');
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section').forEach(section => {
+            section.classList.add('transition-all', 'duration-1000', 'ease-out');
+            if (section.id !== 'hero') {
+                section.classList.add('opacity-0', 'translate-y-4');
+                observer.observe(section);
+            }
+        });
+
+        setTimeout(() => {
+            document.querySelector('#hero div').classList.remove('opacity-0', 'translate-y-4');
+        }, 100);
+
+    </script>
+</body>
+
+</html>
